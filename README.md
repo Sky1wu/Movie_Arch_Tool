@@ -1,5 +1,4 @@
-# Movie_Arch_Tool
-# 电影自动归档脚本
+# Movie_Arch_Tool - 电影自动归档脚本
 
 ## FUTURE
 1. 搜索当前目录电影文件，在豆瓣中获取相应电影信息

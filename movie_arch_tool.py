@@ -9,8 +9,16 @@ dirs = os.listdir('.')
 ext_list = [".mkv", ".mp4"]
 for file_name in dirs:
     if os.path.splitext(file_name)[1].lower() in ext_list:
-        url = 'https://movie.douban.com/j/subject_suggest?q='+file_name
-        response = requests.get(url).json()
+        movie_name = os.path.splitext(file_name)[0]
+        while True:
+            url = 'https://movie.douban.com/j/subject_suggest?q=' + movie_name
+            response = requests.get(url).json()
+            if len(response):
+                break
+            else:
+                print(file_name)
+                movie_name = input('以上文件匹配失败，请手动输入电影名称：')
+
         movie_id = response[0]['id']
         movie_title = response[0]['title']
         sub_title = response[0]['sub_title']
@@ -23,9 +31,14 @@ for file_name in dirs:
         picture = all_img_tag[0]['src']
         pic_add = requests.get(picture)
 
-        path = sys.path[0]+'/'+movie_title+'-'+sub_title+'/'
+        if movie_title == sub_title:
+            path = sys.path[0]+'/'+movie_title + '/'
+        else:
+            path = sys.path[0]+'/'+movie_title+'-'+sub_title+'/'
+
         if not os.path.exists(path):
             os.mkdir(path)
+
         shutil.move(file_name, path)
         path += movie_title
         with open(path+'.jpg', 'wb') as file:

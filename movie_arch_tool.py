@@ -4,6 +4,7 @@ import sys
 import shutil
 from bs4 import BeautifulSoup
 import platform
+from urllib.parse import unquote
 
 if platform.system() == 'Windows':
     import ctypes
@@ -13,9 +14,13 @@ if platform.system() == 'Windows':
     from ctypes import POINTER, Structure, c_wchar, c_int, sizeof, byref
     from ctypes.wintypes import BYTE, WORD, DWORD, LPWSTR, LPSTR
 
+# 自定义区域
+ext_list = [".mkv", ".mp4"]  # 脚本扫描的文件，可自行添加
+assrt_token = ''  # 射手网(伪) 的 API，用于下载字幕，可留空
+
 os.chdir(sys.path[0])
 dirs = os.listdir('.')
-ext_list = [".mkv", ".mp4"]
+
 for file_name in dirs:
     if os.path.splitext(file_name)[1].lower() in ext_list:
         movie_name = os.path.splitext(file_name)[0]
@@ -28,6 +33,7 @@ for file_name in dirs:
                 print(file_name)
                 movie_name = input('以上文件匹配失败，请手动输入电影名称：')
 
+        print(movie_name + ' 信息匹配成功')
         movie_id = response[0]['id']
         movie_title = response[0]['title']
         sub_title = response[0]['sub_title']
@@ -53,18 +59,45 @@ for file_name in dirs:
         with open(img_path, 'wb') as file:
             file.write(pic_add.content)
         file.close()
+        print(movie_name+' 封面下载完成')
 
+        # 字幕下载
+        if assrt_token is not '' and movie_title != sub_title:
+            assrt_search_url = 'http://api.assrt.net/v1/sub/search?token='
+            url = assrt_search_url+assrt_token+'&q='+movie_name+' '+sub_title
+            response = requests.get(url).json()
+
+            for each_sub in response['sub']['subs']:
+                if('双语' in each_sub['lang']['desc'] or '简' in each_sub['lang']['desc']):
+                    if(each_sub['subtype'] == '其他'):
+                        continue
+                    sub_id = each_sub['id']
+                    break
+
+            assert_url = 'http://api.assrt.net/v1/sub/detail?token='
+            url = assert_url+assrt_token+'&id='+str(sub_id)
+            response = requests.get(url).json()
+            sub_url = response['sub']['subs'][0]['filelist'][0]['url']
+            sub_file = requests.get(sub_url)
+            sub_url = str(sub_url)
+            sub_file_name = unquote(os.path.basename(
+                sub_url[: sub_url.index('?_=')]))
+            sub_path = path+sub_file_name
+
+            with open(sub_path, 'wb') as file:
+                file.write(sub_file.content)
+            file.close()
+            print(movie_name+' 字幕下载完成')
+
+        # 修改 Windows 文件夹图标
         if platform.system() == 'Windows':
             img = Image.open(img_path)
             x, y = img.size
             x = int(256/y*x)
 
             img = img.resize((x, 256), Image.ANTIALIAS)
-
             img_new = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
-
             img_new.paste(img, (int((256 - x) / 2), 0))
-
             img_new.save(path+'favicon.ico', "ico", quality=100)
 
             folderpath = path
@@ -120,3 +153,4 @@ for file_name in dirs:
             win32api.SetFileAttributes(
                 path+'favicon.ico', win32con.FILE_ATTRIBUTE_HIDDEN)
             os.remove(img_path)
+            print(movie_name+' 封面修改完成')

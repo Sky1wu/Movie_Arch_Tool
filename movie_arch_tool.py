@@ -64,7 +64,7 @@ for file_name in dirs:
         # 字幕下载
         if assrt_token is not '' and movie_title != sub_title:
             assrt_search_url = 'http://api.assrt.net/v1/sub/search?token='
-            url = assrt_search_url+assrt_token+'&q='+movie_name+' '+sub_title
+            url = assrt_search_url+assrt_token+'&q='+movie_title+' '+sub_title
             response = requests.get(url).json()
 
             for each_sub in response['sub']['subs']:

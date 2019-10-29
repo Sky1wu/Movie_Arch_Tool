@@ -29,3 +29,6 @@ pip install requests bs4 pillow
 ## BUG
 1. 搜索功能需优化，目前仅为直接提交文件名至豆瓣进行搜索，部分复杂文件名无法获取正确结果
 2. 电影名中带冒号的文件会处理失败
+
+## LINK
+[WTX's Blog - 电影一键归档脚本](https://wtx.moe/archives/97/)

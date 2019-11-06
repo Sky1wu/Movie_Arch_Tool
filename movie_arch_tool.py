@@ -63,23 +63,44 @@ for file_name in dirs:
 
         # 字幕下载
         if assrt_token is not '' and movie_title != sub_title:
-            assrt_search_url = 'http://api.assrt.net/v1/sub/search?token='
-            url = assrt_search_url+assrt_token+'&q='+movie_title+' '+sub_title
-            response = requests.get(url).json()
+            if movie_title == sub_title:
+                search_keyword = movie_title
+            else:
+                search_keyword = movie_title+' '+sub_title
 
-            for each_sub in response['sub']['subs']:
-                if('双语' in each_sub['lang']['desc'] or '简' in each_sub['lang']['desc']):
-                    if(each_sub['subtype'] == '其他'):
-                        continue
-                    sub_id = each_sub['id']
-                    break
+            sub_search_url = 'http://api.assrt.net/v1/sub/search'
 
-            assert_url = 'http://api.assrt.net/v1/sub/detail?token='
-            url = assert_url+assrt_token+'&id='+str(sub_id)
-            response = requests.get(url).json()
-            sub_url = response['sub']['subs'][0]['filelist'][0]['url']
+            sub_search_data = {
+                'token': assrt_token,
+                'q': search_keyword,
+                # 'no_muxer': '1'
+            }
+
+            response = requests.get(sub_search_url, params=sub_search_data)
+
+            if(response.json()['status'] != 0):
+                print('error')
+            else:
+                res = response.json()['sub']['subs']
+                res = sorted(res, key=lambda k: k['vote_score'], reverse=True)
+
+                if(res[0]['revision'] == 0):
+                    sub_id = res[0][id]
+                else:
+                    sub_id = res[0]['revision']
+
+            sub_detail_url = 'http://api.assrt.net/v1/sub/detail'
+
+            sub_detail_data = {
+                'token': assrt_token,
+                'id': sub_id
+            }
+
+            response = requests.get(sub_detail_url, params=sub_detail_data)
+
+            sub_url = response.json()['sub']['subs'][0]['url']
+            print(movie_name+' 下载字幕')
             sub_file = requests.get(sub_url)
-            sub_url = str(sub_url)
             sub_file_name = unquote(os.path.basename(
                 sub_url[: sub_url.index('?_=')]))
             sub_path = path+sub_file_name

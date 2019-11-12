@@ -24,6 +24,8 @@ dirs = os.listdir('.')
 for file_name in dirs:
     if os.path.splitext(file_name)[1].lower() in ext_list:
         movie_name = os.path.splitext(file_name)[0]
+
+        # 在豆瓣匹配电影信息
         while True:
             url = 'https://movie.douban.com/j/subject_suggest?q=' + movie_name
             response = requests.get(url).json()
@@ -37,6 +39,8 @@ for file_name in dirs:
         movie_id = response[0]['id']
         movie_title = response[0]['title']
         sub_title = response[0]['sub_title']
+
+        # 下载电影封面
         url = 'https://movie.douban.com/subject/'+movie_id+'/photos?type=R'
         response = requests.get(url)
 
@@ -46,6 +50,7 @@ for file_name in dirs:
         picture = all_img_tag[0]['src']
         pic_add = requests.get(picture)
 
+        # 创建电影对应文件夹
         if movie_title == sub_title:
             path = sys.path[0]+'/'+movie_title + '/'
         else:
@@ -82,33 +87,42 @@ for file_name in dirs:
                 print('error')
             else:
                 res = response.json()['sub']['subs']
-                res = sorted(res, key=lambda k: k['vote_score'], reverse=True)
 
-                if(res[0]['revision'] == 0):
-                    sub_id = res[0][id]
+                if len(res) == 0:
+                    print(file_name+' 未找到字幕')
                 else:
-                    sub_id = res[0]['revision']
+                    # 对字幕搜索结果按评分排序
+                    res = sorted(
+                        res, key=lambda k: k['vote_score'], reverse=True)
 
-            sub_detail_url = 'http://api.assrt.net/v1/sub/detail'
+                    # 检查是否有修订版字幕
+                    sub_id = res[0]['id']
+                    while res[0]['revision'] != 0:
+                        sub_id = res[0]['revision']
 
-            sub_detail_data = {
-                'token': assrt_token,
-                'id': sub_id
-            }
+                    sub_detail_url = 'http://api.assrt.net/v1/sub/detail'
 
-            response = requests.get(sub_detail_url, params=sub_detail_data)
+                    sub_detail_data = {
+                        'token': assrt_token,
+                        'id': sub_id
+                    }
 
-            sub_url = response.json()['sub']['subs'][0]['url']
-            print(movie_name+' 下载字幕')
-            sub_file = requests.get(sub_url)
-            sub_file_name = unquote(os.path.basename(
-                sub_url[: sub_url.index('?_=')]))
-            sub_path = path+sub_file_name
+                    response = requests.get(
+                        sub_detail_url, params=sub_detail_data)
 
-            with open(sub_path, 'wb') as file:
-                file.write(sub_file.content)
-            file.close()
-            print(movie_name+' 字幕下载完成')
+                    sub_url = response.json()['sub']['subs'][0]['url']
+                    print(movie_name+' 下载字幕')
+                    sub_file = requests.get(sub_url)
+
+                    # 获取字幕文件名
+                    sub_file_name = unquote(os.path.basename(
+                        sub_url[: sub_url.index('?_=')]))
+                    sub_path = path+sub_file_name
+
+                    with open(sub_path, 'wb') as file:
+                        file.write(sub_file.content)
+                    file.close()
+                    print(movie_name+' 字幕下载完成')
 
         # 修改 Windows 文件夹图标
         if platform.system() == 'Windows':

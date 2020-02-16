@@ -17,7 +17,7 @@
 需要安装 `requests`, `Pillow`。
 
 ```shell
-pip install requests bs4 pillow
+pip install requests pillow
 ```  
 
 ## HOW TO USE

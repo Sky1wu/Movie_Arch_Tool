@@ -81,19 +81,37 @@ def DetailsonTMDb(TMDbMovieID):
 
     title_zh_CN = TMDbDetailsRes['title'].replace(': ', '：')
     original_title = TMDbDetailsRes['original_title'].replace(': ', '：')
-    poster_path = TMDbDetailsRes['poster_path']
+    original_language = TMDbDetailsRes['original_language']
 
-    return title_zh_CN, original_title, poster_path
+    return title_zh_CN, original_title, original_language
 
 
-def getPosterImage(poster_path):
+def getPosterImage(TMDbMovieID, original_language):
     '''
     Get poster image from TMDb.
     '''
     print('下载电影封面...')
+
+    TMDbImageURL = TMDb_API_URL+'/movie/'+TMDbMovieID+'/images'
+
+    TMDbImageData = {
+        'api_key': TMDb_API_Key,
+        'language': original_language
+    }
+
+    try:
+        TMDbImageRes = requests.get(TMDbImageURL, params=TMDbImageData).json()
+        posterPath = TMDbImageRes['posters'][0]['file_path']
+    except IndexError:
+        TMDbImageData = {
+            'api_key': TMDb_API_Key,
+        }
+        TMDbImageRes = requests.get(TMDbImageURL, params=TMDbImageData).json()
+        posterPath = TMDbImageRes['posters'][0]['file_path']
+
     TMDbImageBaseURL = 'https://image.tmdb.org/t/p/w300'
 
-    posterURL = TMDbImageBaseURL+poster_path
+    posterURL = TMDbImageBaseURL+posterPath
 
     posterImage = requests.get(posterURL)
 
@@ -196,7 +214,7 @@ if __name__ == "__main__":
             if skipFlag:
                 continue
 
-            title_zh_CN, original_title, poster_path = DetailsonTMDb(
+            title_zh_CN, original_title, original_language = DetailsonTMDb(
                 TMDbMovieID)
 
             if title_zh_CN == original_title:
@@ -210,7 +228,7 @@ if __name__ == "__main__":
             shutil.move(originalFileName, folderPath)
             posterLocalPath = folderPath+title_zh_CN+'.jpg'
 
-            posterImage = getPosterImage(poster_path)
+            posterImage = getPosterImage(TMDbMovieID, original_language)
 
             file = open(posterLocalPath, 'wb')
             file.write(posterImage)

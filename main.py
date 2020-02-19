@@ -13,6 +13,9 @@ if platform.system() == 'Windows':
     from ctypes import POINTER, Structure, c_wchar, c_int, sizeof, byref
     from ctypes.wintypes import BYTE, WORD, DWORD, LPWSTR, LPSTR
 
+elif platform.system() == 'Darwin':
+    import Cocoa
+    from PIL import Image
 
 # 自定义区域
 TMDb_API_Key = ''  # TMDb 的 API Key
@@ -181,6 +184,20 @@ def changeFloderIconWin(folderPath, posterLocalPath):
     os.remove(posterLocalPath)
 
 
+def changeFloderIconMac(folderPath, posterLocalPath):
+    img = Image.open(posterLocalPath)
+    x, y = img.size
+    x = int(256/y*x)
+
+    img = img.resize((x, 256), Image.ANTIALIAS)
+    img_new = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+    img_new.paste(img, (int((256 - x) / 2), 0))
+    img_new.save(folderPath+'favicon.png', "png", quality=100)
+
+    Cocoa.NSWorkspace.sharedWorkspace().setIcon_forFile_options_(Cocoa.NSImage.alloc().initWithContentsOfFile_(
+        folderPath+'favicon.png'), folderPath, 0) or sys.exit("Unable to set file icon")
+
+
 if __name__ == "__main__":
     os.chdir(sys.path[0])
     dirs = os.listdir('.')
@@ -236,3 +253,5 @@ if __name__ == "__main__":
 
             if platform.system() == 'Windows':
                 changeFloderIconWin(folderPath, posterLocalPath)
+            elif platform.system() == 'Darwin':
+                changeFloderIconMac(folderPath, posterLocalPath)
